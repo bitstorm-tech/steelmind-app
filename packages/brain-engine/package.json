@@ -1,0 +1,13 @@
+{
+  "name": "@steelmind/brain-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@steelmind/game-types": "workspace:*"
+  }
+}

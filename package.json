@@ -1,0 +1,18 @@
+{
+  "name": "steelmind",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:server": "bun run --cwd apps/server dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "test": "bun run test:packages && bun run test:web",
+    "test:packages": "bun test packages apps/server",
+    "test:web": "bun run --cwd apps/web test",
+    "typecheck": "bun run --filter '*' typecheck"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^6.0.0"
+  }
+}
