@@ -11,6 +11,9 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/saira": "^5.3.0",
+    "@fontsource/saira-condensed": "^5.3.0",
     "@steelmind/game-types": "workspace:*",
     "vue": "^3.5.0"
   },

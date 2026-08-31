@@ -1,0 +1,27 @@
+/* Steelmind design tokens — hangar/deployment terminal direction.
+   Steel + sodium-vapor amber, stencil military typography, mono data. */
+
+:root {
+  /* palette */
+  --bg-void: #0c0f12;
+  --bg: #14181c;
+  --plate: #1b2126;
+  --plate-raised: #222a30;
+  --line: #303a42;
+  --line-strong: #4a5661;
+  --ink: #e8e3d5;
+  --ink-dim: #97a1aa;
+  --ink-faint: #5d6870;
+  --amber: #ffb020;
+  --amber-deep: #b87a10;
+  --danger: #d64b3f;
+
+  /* type */
+  --font-display: "Saira Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Saira", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+  /* silhouette */
+  --mech-body: #242c33;
+  --mech-edge: #5a6670;
+}

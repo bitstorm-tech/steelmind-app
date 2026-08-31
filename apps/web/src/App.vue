@@ -1,26 +1,9 @@
 <script setup lang="ts">
-import { PACKAGE_NAME } from "@steelmind/game-types";
+// Root composition surface. Future screens (brain selection, match view)
+// will be composed here; for now the flow starts at profile selection.
+import ProfileSelectionScreen from "./features/profile-selection/ProfileSelectionScreen.vue";
 </script>
 
 <template>
-  <main class="app">
-    <h1 class="title">Steelmind</h1>
-    <p class="hint">Scaffold ready. Shared types loaded from {{ PACKAGE_NAME }}.</p>
-  </main>
+  <ProfileSelectionScreen />
 </template>
-
-<style scoped>
-.app {
-  font-family: system-ui, sans-serif;
-  padding: 2rem;
-}
-
-.title {
-  margin: 0 0 0.5rem;
-}
-
-.hint {
-  margin: 0;
-  opacity: 0.7;
-}
-</style>
