@@ -94,6 +94,24 @@ Not included:
 - Steam client,
 - native mobile applications.
 
+## Match Modes
+
+During MVP development:
+
+```text
+DEVELOPER SANDBOX
+```
+
+The developer selects both mechs, Brains, and Combat Profiles manually.
+Any Brain can occupy either side.
+
+Planned for the finished game:
+
+- PvP: two players face each other with their Brains.
+- Self-Test: a player pits two of their own Brains against each other to refine tactics.
+
+Combat rules are identical in every mode.
+
 ---
 
 # 4. Technology Stack
@@ -644,6 +662,16 @@ or
 120 m
 ```
 
+If the mech is not yet at the boundary,
+the movement is clamped and RETREAT succeeds with reduced distance.
+
+If the mech is already exactly at the boundary,
+RETREAT fails:
+
+```text
+ARENA_BOUNDARY
+```
+
 ---
 
 # 20. CHARGE
@@ -702,6 +730,14 @@ CHARGE itself causes:
 0 damage
 ```
 
+CHARGE has no range restriction:
+
+- it always executes,
+- from DISTANCE 0 it connects immediately,
+- Energy is consumed on execution.
+
+Insufficient Energy remains a normal execution-time failure.
+
 ---
 
 # 21. ENGAGED
@@ -719,18 +755,22 @@ While ENGAGED:
 ```text
 ADVANCE → fails
 RETREAT → fails
-CHARGE  → fails
 ```
 
-Other actions remain possible:
+All other actions remain possible:
 
 ```text
+CHARGE
 MELEE_ATTACK
 RANGED_ATTACK
 DEFEND
 DODGE
 SCAN
 ```
+
+Only the target of a CHARGE becomes ENGAGED.
+
+The charging mech is never pinned and can still move freely.
 
 Normal RANGED_ATTACK range restrictions still apply.
 
@@ -979,10 +1019,14 @@ CURRENT ROUND
 
 CURRENT INITIATIVE
 
-all previously visible enemy actions
+ALL EXECUTED ENEMY ACTIONS
 ```
 
 These values never require scanning.
+
+Failed enemy actions are included.
+
+Failed actions are visible, including which action failed.
 
 ---
 
@@ -1039,6 +1083,10 @@ Instead, players select one predefined Combat Profile.
 
 Profiles provide meaningful hidden attributes for SCAN while avoiding MechLab complexity.
 
+Each profile also defines its Hit Points.
+
+HP is always-known information and never requires scanning.
+
 Initial profiles:
 
 ## BRAWLER
@@ -1046,6 +1094,7 @@ Initial profiles:
 ```text
 Armor:    HEAVY
 Mobility: LOW
+HP:       220
 
 Melee:    POWER_HAMMER
 Ranged:   AUTOCANNON
@@ -1056,6 +1105,7 @@ Ranged:   AUTOCANNON
 ```text
 Armor:    MEDIUM
 Mobility: MEDIUM
+HP:       200
 
 Melee:    ENERGY_BLADE
 Ranged:   RAILGUN
@@ -1066,6 +1116,7 @@ Ranged:   RAILGUN
 ```text
 Armor:    LIGHT
 Mobility: HIGH
+HP:       180
 
 Melee:    IMPACT_FIST
 Ranged:   PULSE_LASER
@@ -1225,7 +1276,7 @@ Possible reasons:
 ```text
 TARGET_OUT_OF_RANGE
 INSUFFICIENT_ENERGY
-ENGAGED
+ENGAGED (ADVANCE and RETREAT only)
 ARENA_BOUNDARY
 NOTHING_LEFT_TO_SCAN
 ```
@@ -1312,6 +1363,10 @@ DEFEND
 ```
 
 is used.
+
+Provider timeouts, network errors, and outages are out of scope for the MVP.
+
+The retry policy covers invalid model output only.
 
 ---
 
@@ -1443,6 +1498,30 @@ MVP conditions use one condition only.
 
 No AND/OR expressions yet.
 
+Each condition consists of:
+
+```text
+SOURCE
+OPERATOR
+VALUE
+UNIT
+```
+
+Operators:
+
+```text
+<  <=  =  >=  >  !=
+```
+
+HP and Energy conditions support two units:
+
+```text
+absolute:  OWN HP < 50
+percent:   OWN HP < 25%
+```
+
+The player selects the unit in the UI.
+
 Example:
 
 ```text
@@ -1487,6 +1566,10 @@ RANGED_WEAPON
 ARMOR_CLASS
 MOBILITY
 ```
+
+PREVIOUS_ENEMY_ACTION is the enemy's most recently executed action.
+
+Failed actions count.
 
 ---
 
@@ -1704,7 +1787,7 @@ KNOWN ENEMY ATTRIBUTES
 
 UNKNOWN ENEMY ATTRIBUTES
 
-RECENT ENEMY ACTIONS
+ALL EXECUTED ENEMY ACTIONS
 
 AVAILABLE GAME ACTIONS
 ACTION COSTS
@@ -1868,6 +1951,23 @@ final result
 ```
 
 Replays consume recorded events only.
+
+## Match Delivery
+
+During MVP development, matches run live:
+the server simulates round by round and streams events via SSE.
+
+The finished game gains a second mode:
+
+```text
+OFFLINE MATCH
+```
+
+The server simulates the entire match in one pass without spectators.
+
+Players watch only the stored replay.
+
+Both modes produce identical replay data.
 
 ---
 
