@@ -397,12 +397,12 @@ Example:
 0m ───────────────────────────────────────── 120m
 ```
 
-Internal positions are stored as integer centimeters.
+Internal positions are stored as integer meters.
 
 Example:
 
 ```text
-position = 3475 cm
+position = 34 m
 ```
 
 Do not use floating-point positions in authoritative combat calculations.
@@ -435,7 +435,7 @@ Actual distance is calculated continuously.
 Example:
 
 ```text
-DISTANCE = 23.4 m
+DISTANCE = 24 m
 ```
 
 Three semantic categories also exist:
@@ -449,7 +449,7 @@ LONG    > 30 m
 The Brain receives both:
 
 ```text
-DISTANCE: 23.4 m
+DISTANCE: 24 m
 DISTANCE_CATEGORY: MEDIUM
 ```
 
@@ -1988,7 +1988,7 @@ Editing a Brain must never change historical match data.
 
 The Game Engine requires meaningful unit tests for:
 
-- exact centimeter positioning,
+- exact integer meter positioning,
 - ADVANCE,
 - RETREAT,
 - arena boundaries,
