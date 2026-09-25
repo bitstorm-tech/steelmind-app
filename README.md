@@ -23,6 +23,7 @@ bun test                # engine + server tests (bun test), web tests (vitest)
 bun run dev             # server + web together
 bun run dev:server      # http://localhost:3000/health
 bun run dev:web         # http://localhost:5173
+bun run simulate        # scripted CLI fight; flags: --seed --a --b --planner-a --planner-b --quiet
 ```
 
 ## Dependency notes

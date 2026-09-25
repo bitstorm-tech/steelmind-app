@@ -3,6 +3,8 @@
 // SPEC §42–§47; gameplay keywords from §50. Starter Brains are complete,
 // valid brains — customization (Brain Editor, §51) is a later step.
 
+import type { ScanAttribute } from "@steelmind/game-types";
+
 export type BrainId =
   | "BERSERKER"
   | "SENTINEL"
@@ -12,11 +14,7 @@ export type BrainId =
 
 // Trigger condition sources, SPEC §46. KNOWN_/UNKNOWN_ sources encode the
 // scan state of one hidden enemy attribute in the source itself.
-export type ScanAttribute =
-  | "MELEE_WEAPON"
-  | "RANGED_WEAPON"
-  | "ARMOR_CLASS"
-  | "MOBILITY";
+export type { ScanAttribute };
 
 export type ScanStateSource = `KNOWN_${ScanAttribute}` | `UNKNOWN_${ScanAttribute}`;
 
