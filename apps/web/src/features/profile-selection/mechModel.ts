@@ -1,33 +1,9 @@
 import * as THREE from "three";
-import type { CombatProfileSpec, ProfileId } from "./profiles";
+import { MECH_SHAPES } from "./hangarShared";
+import type { AnchorKey } from "./hangarShared";
+import type { CombatProfileSpec } from "./profiles";
 
-// Procedural low-poly mech per Combat Profile for the 3D hangar. Proportions
-// are presentation only — they visualize mass/mobility, not engine data.
-
-export interface MechShape {
-  legW: number;
-  thigh: number;
-  shin: number;
-  hipW: number;
-  torsoW: number;
-  torsoH: number;
-  torsoD: number;
-  headW: number;
-  headH: number;
-  headD: number;
-  headZ: number;
-  shoulder: number;
-  arm: number;
-  armT: number;
-}
-
-export const MECH_SHAPES: Record<ProfileId, MechShape> = {
-  BRAWLER: { legW: 0.62, thigh: 1.0, shin: 1.05, hipW: 1.25, torsoW: 2.2, torsoH: 1.5, torsoD: 1.5, headW: 0.6, headH: 0.42, headD: 0.6, headZ: 0.35, shoulder: 0.95, arm: 0.8, armT: 1.45 },
-  ASSAULT: { legW: 0.5, thigh: 1.15, shin: 1.2, hipW: 1.05, torsoW: 1.75, torsoH: 1.35, torsoD: 1.2, headW: 0.6, headH: 0.5, headD: 0.65, headZ: 0.2, shoulder: 0.75, arm: 0.9, armT: 1.15 },
-  SKIRMISHER: { legW: 0.36, thigh: 1.35, shin: 1.45, hipW: 0.9, torsoW: 1.3, torsoH: 1.05, torsoD: 1.0, headW: 0.55, headH: 0.36, headD: 0.75, headZ: 0.35, shoulder: 0.55, arm: 0.85, armT: 0.9 },
-};
-
-export type AnchorKey = "melee" | "ranged" | "sensor";
+// Procedural low-poly mech per Combat Profile for the Three.js hangar.
 
 interface MechArm {
   arm: THREE.Group;

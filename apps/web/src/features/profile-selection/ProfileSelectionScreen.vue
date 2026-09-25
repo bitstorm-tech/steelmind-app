@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from "vue";
 import { STARTER_BRAINS } from "../brain-selection/brains";
 import type { BrainId } from "../brain-selection/brains";
-import type { HangarScene } from "./hangarScene";
+import type { HangarScene } from "./hangarShared";
 import { ARMOR_PIPS, COMBAT_PROFILES, MOBILITY_PIPS } from "./profiles";
 import type { ProfileId } from "./profiles";
 
