@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steelmind Mockup C — Cockpit Briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber: #ffb020;
+    --phos: #ffb84a;
+    --hud: #7cf5c8;
+    --hostile: #ff4a3d;
+    --ink: #e8e3d5;
+    --dim: #97a1aa;
+    --display: "Saira Condensed", "Arial Narrow", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --crt: "VT323", "IBM Plex Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #000; color: var(--ink); font-family: var(--mono); user-select: none; }
+  .shake { animation: shake .35s linear 2; }
+  @keyframes shake { 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-3px, 5px); } 80% { transform: translate(4px, -2px); } }
+  #cockpit { position: fixed; inset: 0; }
+
+  /* ---------- outside world ---------- */
+  .world { position: absolute; inset: -4%; animation: sway 7s ease-in-out infinite; }
+  @keyframes sway { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-6px) rotate(.25deg); } 50% { transform: translateY(2px) rotate(0); } 75% { transform: translateY(-5px) rotate(-.25deg); } }
+  .sky { position: absolute; inset: 0; background: linear-gradient(to bottom, #11161d 0%, #2b2a2e 22%, #7a4a34 38%, #d4834a 44%, #6b4a38 46%, #2a2420 60%, #15130f 100%); }
+  .sun { position: absolute; left: 30%; top: 33%; width: 180px; height: 180px; margin: -90px; border-radius: 50%; background: radial-gradient(circle, rgba(255,214,150,.9), rgba(255,150,70,.25) 35%, transparent 70%); filter: blur(2px); }
+  .ruins { position: absolute; left: 0; right: 0; top: 30%; height: 16%; }
+  .ground { position: absolute; left: -60%; right: -60%; top: 45%; height: 90%; transform-origin: top; transform: perspective(420px) rotateX(78deg);
+    background-image: linear-gradient(rgba(255,180,110,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,180,110,.18) 1px, transparent 1px);
+    background-size: 90px 90px; mask-image: linear-gradient(to bottom, transparent, #000 30%); }
+  .haze { position: absolute; left: 0; right: 0; top: 36%; height: 18%; background: linear-gradient(to bottom, transparent, rgba(212,131,74,.35), transparent); }
+  .enemy { position: absolute; left: 63%; top: 26.5%; width: 150px; transform: translateX(-50%); filter: url(#heat) drop-shadow(0 0 1px rgba(255,160,90,.6)); animation: stalk 9s ease-in-out infinite; }
+  @keyframes stalk { 50% { transform: translateX(calc(-50% - 30px)); } }
+  .dust { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: rgba(255,210,160,.5); animation: drift linear infinite; }
+  @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(-60vw, 8vh); } }
+
+  /* ---------- glass + HUD ---------- */
+  .glass { position: absolute; inset: 0; pointer-events: none; background:
+      linear-gradient(115deg, transparent 20%, rgba(255,255,255,.05) 22%, transparent 27%, transparent 62%, rgba(255,255,255,.04) 64%, transparent 68%),
+      radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(0,0,0,.35)); }
+  .hud { position: absolute; inset: 0; color: var(--hud); text-shadow: 0 0 6px rgba(124,245,200,.7); font-family: var(--mono); pointer-events: none; }
+  .hud svg { stroke: var(--hud); fill: none; filter: drop-shadow(0 0 4px rgba(124,245,200,.6)); }
+  .tape { position: absolute; left: 50%; top: 7%; width: 420px; height: 36px; margin-left: -210px; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent); }
+  .tape .strip { position: absolute; top: 0; left: 0; white-space: nowrap; font-size: 11px; letter-spacing: .1em; animation: tape 26s linear infinite alternate; }
+  .tape .strip span { display: inline-block; width: 60px; text-align: center; border-left: 1px solid rgba(124,245,200,.6); height: 14px; line-height: 30px; }
+  @keyframes tape { to { transform: translateX(-300px); } }
+  .tape::after { content: "▼"; position: absolute; left: 50%; top: 18px; transform: translateX(-50%); font-size: 10px; }
+  .reticle { position: absolute; left: 50%; top: 31%; width: 120px; height: 120px; margin: -60px; }
+  .ladder { position: absolute; left: 50%; top: 31%; width: 360px; margin-left: -180px; font-size: 10px; }
+  .ladder div { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; }
+  .ladder div::before, .ladder div::after { content: ""; width: 90px; border-top: 1px solid var(--hud); opacity: .7; }
+  .readout { position: absolute; font-size: 12px; letter-spacing: .12em; line-height: 1.8; }
+  .readout b { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: .08em; display: block; line-height: 1.1; }
+  .ro-left { left: 12%; top: 12%; }
+  .ro-right { right: 12%; top: 12%; text-align: right; }
+  .vbar { position: absolute; top: 20%; width: 8px; height: 22%; border: 1px solid var(--hud); }
+  .vbar i { position: absolute; left: 1px; right: 1px; bottom: 1px; background: var(--hud); box-shadow: 0 0 8px var(--hud); }
+  .vbar small { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-size: 10px; }
+
+  .target { position: absolute; left: 63%; top: 30%; width: 150px; height: 150px; transform: translateX(-50%); color: var(--hostile); text-shadow: 0 0 6px rgba(255,74,61,.7); animation: stalk 9s ease-in-out infinite, lock 1.6s ease-out both; }
+  @keyframes lock { 0% { opacity: 0; scale: 1.8; } 60% { opacity: 1; scale: .95; } 100% { scale: 1; } }
+  .target i { position: absolute; width: 22px; height: 22px; border: 2px solid var(--hostile); filter: drop-shadow(0 0 4px var(--hostile)); }
+  .target i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
+  .target i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
+  .target i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
+  .target i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
+  .target .lbl { position: absolute; left: calc(100% + 14px); top: 0; width: 250px; font-size: 11px; letter-spacing: .1em; line-height: 1.7; }
+  .target .lbl b { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: .1em; display: block; }
+  .target .lbl .unk { color: #ffd0cc; opacity: .85; }
+  .target .lbl .unk span { animation: flick 1.2s steps(2) infinite; }
+  @keyframes flick { 50% { opacity: .3; } }
+
+  .countdown { position: absolute; left: 50%; top: 31%; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 800; font-size: 180px; color: var(--hud); text-shadow: 0 0 30px var(--hud); opacity: 0; }
+  .countdown.go { animation: count .9s ease-out; }
+  @keyframes count { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(.9); } }
+  .alert { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 160px rgba(255,74,61,.0); transition: box-shadow .3s; }
+  .alert.on { animation: alert 1s ease-in-out infinite; }
+  @keyframes alert { 50% { box-shadow: inset 0 0 180px rgba(255,74,61,.45); } }
+
+  /* ---------- canopy frame ---------- */
+  .canopy { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* ---------- dashboard ---------- */
+  .dash { position: absolute; left: 0; right: 0; bottom: 0; height: 47%; perspective: 1100px; perspective-origin: 50% 0%; }
+  .deck { position: absolute; inset: 0; transform-origin: 50% 100%; transform: rotateX(16deg); transform-style: preserve-3d;
+    background: linear-gradient(to bottom, #1d2328, #0e1215 40%, #07090b); clip-path: polygon(6% 0, 94% 0, 100% 14%, 100% 100%, 0 100%, 0 14%); }
+  .deck::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 119px, rgba(255,255,255,.03) 119px 120px), linear-gradient(to bottom, rgba(255,255,255,.12), transparent 2px); }
+  .consoles { position: absolute; left: 4%; right: 4%; top: 6%; height: 66%; display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 2.2%; transform-style: preserve-3d; }
+  .mfd { position: relative; transform-style: preserve-3d; padding: 14px 34px; border-radius: 6px;
+    background: linear-gradient(145deg, #2a3137, #13171b 60%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 6px rgba(0,0,0,.6), 0 18px 30px rgba(0,0,0,.6); }
+  .mfd.l { transform: rotateY(22deg) translateZ(-10px); transform-origin: right center; }
+  .mfd.r { transform: rotateY(-22deg) translateZ(-10px); transform-origin: left center; }
+  .mfd.c { transform: translateZ(20px); }
+  .mfd .btns { position: absolute; top: 14px; bottom: 14px; width: 18px; display: flex; flex-direction: column; justify-content: space-around; }
+  .mfd .btns.a { left: 8px; } .mfd .btns.b { right: 8px; }
+  .mfd .btns i { height: 12%; background: linear-gradient(#3a434a, #20262b); border-radius: 2px; box-shadow: 0 2px 0 #06080a; }
+  .screen { position: relative; height: 100%; border-radius: 10px / 14px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #1b1408, #080603 80%); color: var(--phos); font-family: var(--crt); font-size: 19px; line-height: 1.05; padding: 10px 14px;
+    text-shadow: 0 0 5px rgba(255,184,74,.8); box-shadow: inset 0 0 30px rgba(0,0,0,.9), inset 0 0 4px rgba(255,184,74,.3); }
+  .screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), linear-gradient(120deg, rgba(255,255,255,.06), transparent 40%); animation: roll 7s linear infinite; }
+  @keyframes roll { from { background-position: 0 0, 0 0; } to { background-position: 0 90px, 0 0; } }
+  .screen.red { color: #ff7a6a; text-shadow: 0 0 5px rgba(255,90,70,.8); background: radial-gradient(ellipse at 50% 40%, #1c0a08, #070303 80%); }
+  .screen h4 { font-weight: 400; font-size: 17px; letter-spacing: .12em; display: flex; justify-content: space-between; border-bottom: 1px solid currentColor; padding-bottom: 3px; margin-bottom: 6px; opacity: .9; }
+  .screen .big { font-size: 34px; letter-spacing: .05em; }
+  .ln { display: flex; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ln .led { width: 8px; height: 8px; margin-top: 6px; flex: none; background: currentColor; box-shadow: 0 0 6px currentColor; border-radius: 50%; }
+  .ln .led.off { opacity: .25; box-shadow: none; }
+  .ln .led.blink { animation: flick 1s steps(2) infinite; }
+  .ln .k { opacity: .65; min-width: 76px; }
+  .meter { height: 12px; border: 1px solid currentColor; margin: 3px 0 7px; padding: 1px; }
+  .meter i { display: block; height: 100%; background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 8px); }
+  #wire { position: absolute; right: 8px; top: 30px; width: 50%; height: calc(100% - 40px); }
+  .radar { position: absolute; right: 12px; bottom: 12px; width: 92px; height: 92px; border-radius: 50%; border: 1px solid currentColor; overflow: hidden; }
+  .radar::before { content: ""; position: absolute; inset: 0; background: conic-gradient(from 0deg, rgba(255,122,106,.55), transparent 25%); animation: sweep 2.4s linear infinite; }
+  .radar::after { content: ""; position: absolute; left: 60%; top: 26%; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; animation: flick 2.4s steps(2) infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+
+  /* controls strip */
+  .controls { position: absolute; left: 6%; right: 6%; bottom: 8%; height: 19%; display: flex; align-items: center; justify-content: space-between; }
+  .toggles { display: flex; gap: 18px; }
+  .tog { width: 46px; text-align: center; font-size: 9px; letter-spacing: .12em; color: var(--dim); cursor: pointer; }
+  .tog .base { width: 26px; height: 26px; margin: 0 auto 6px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #59636b, #1a1f23); box-shadow: 0 3px 0 #050607; position: relative; }
+  .tog .base::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 22px; margin-left: -3px; background: linear-gradient(90deg, #9aa4ab, #d8dde0, #7c858c); border-radius: 3px; transform-origin: 50% 100%; transform: translateY(-100%) rotate(-25deg); transition: transform .15s; }
+  .tog.on .base::after { transform: translateY(-100%) rotate(25deg); }
+  .tog .lamp { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; background: #2b1c05; }
+  .tog.on .lamp { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+  .engage { position: relative; width: 170px; height: 88px; perspective: 500px; cursor: pointer; }
+  .engage .btn { position: absolute; inset: 14px 30px; border-radius: 8px; background: radial-gradient(circle at 45% 35%, #ff6a58, #a3160c 70%); box-shadow: 0 6px 0 #4a0904, 0 0 26px rgba(255,74,61,.5); display: grid; place-items: center; font-family: var(--display); font-weight: 800; letter-spacing: .2em; color: #ffe9e5; font-size: 18px; transition: transform .1s, box-shadow .1s; }
+  .engage.pressed .btn { transform: translateY(5px); box-shadow: 0 1px 0 #4a0904, 0 0 40px rgba(255,74,61,.9); }
+  .engage .cover { position: absolute; inset: 6px 22px; border-radius: 10px; transform-origin: 50% 0; transition: transform .45s cubic-bezier(.3,1.4,.5,1);
+    background: repeating-linear-gradient(-45deg, rgba(255,176,32,.55) 0 10px, rgba(20,20,20,.55) 10px 20px); border: 2px solid rgba(255,176,32,.8); backdrop-filter: blur(1px); box-shadow: 0 8px 16px rgba(0,0,0,.5); }
+  .engage.open .cover { transform: rotateX(-118deg); }
+  .engage small { position: absolute; left: 0; right: 0; bottom: -18px; text-align: center; font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+
+  .lamps { display: flex; gap: 10px; align-items: center; font-size: 9px; letter-spacing: .14em; color: var(--dim); }
+  .lamps i { width: 12px; height: 12px; border-radius: 2px; background: #3a1310; }
+  .lamps i.on { background: var(--hostile); box-shadow: 0 0 10px var(--hostile); animation: flick 1s steps(2) infinite; }
+  .lamps i.ok { background: #62b85a; box-shadow: 0 0 8px #62b85a; }
+
+  .mock { position: fixed; left: 16px; top: 12px; font-size: 10px; letter-spacing: .14em; color: #5d6870; z-index: 9; }
+  .mock a { color: var(--dim); text-decoration: none; margin-right: 10px; }
+  .mock a:hover, .mock a.cur { color: var(--amber); }
+  .keyhint { position: fixed; right: 16px; top: 12px; font-size: 10px; letter-spacing: .14em; color: #5d6870; z-index: 9; }
+
+  @media (max-width: 1000px) {
+    .consoles { grid-template-columns: 1fr; }
+    .mfd.l, .mfd.r { display: none; }
+    .target .lbl, .ro-left, .ro-right, .ladder, .toggles, .lamps { display: none; }
+    .controls { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="heat"><feTurbulence type="fractalNoise" baseFrequency="0.02 0.09" numOctaves="2" seed="3"><animate attributeName="baseFrequency" dur="3s" values="0.02 0.09;0.02 0.12;0.02 0.09" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
+  <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e2429"/><stop offset=".6" stop-color="#101418"/><stop offset="1" stop-color="#07090b"/></linearGradient>
+</svg>
+
+<div id="cockpit">
+  <div class="world">
+    <div class="sky"></div>
+    <div class="sun"></div>
+    <svg class="ruins" viewBox="0 0 1600 160" preserveAspectRatio="none">
+      <path fill="#3a3432" opacity=".55" d="M0 160 V120 H60 V90 H90 V110 H150 V70 H170 V60 H200 V100 H260 V130 H330 V80 H350 V95 H420 V125 H500 V60 L520 40 L530 60 V110 H600 V140 H700 V100 H760 V70 H790 V115 H880 V130 H960 V85 H1000 V50 H1015 V90 H1080 V120 H1160 V95 H1230 V60 H1250 V110 H1340 V130 H1420 V90 H1470 V120 H1600 V160 Z"/>
+      <path fill="#262324" d="M0 160 V140 H120 V115 H180 V135 H300 V120 H340 V145 H470 V125 H560 V100 L580 92 V140 H720 V128 H850 V145 H990 V118 H1060 V138 H1190 V112 H1210 V140 H1380 V125 H1480 V145 H1600 V160 Z"/>
+    </svg>
+    <div class="haze"></div>
+    <div class="ground"></div>
+    <svg class="enemy" viewBox="0 0 200 240">
+      <g fill="#0d1014" stroke="rgba(255,170,110,.35)" stroke-width="1">
+        <path d="M70 150 L90 150 L86 200 L96 232 L62 232 L70 200Z"/>
+        <path d="M110 150 L130 150 L130 200 L138 232 L104 232 L114 200Z"/>
+        <path d="M66 136 H134 L128 156 H72Z"/>
+        <path d="M52 80 L148 80 L140 138 L60 138Z"/>
+        <path d="M86 62 H114 L118 80 H82Z"/>
+        <path d="M28 74 L56 70 L60 100 L32 104Z"/><path d="M172 74 L144 70 L140 100 L168 104Z"/>
+        <path d="M34 104 L54 102 L52 150 L36 152Z"/><path d="M166 104 L146 102 L148 150 L164 152Z"/>
+        <path d="M146 138 H196 V148 H146Z"/>
+      </g>
+      <path d="M90 71 H110" stroke="#ff4a3d" stroke-width="3" style="filter:drop-shadow(0 0 3px #ff4a3d)"/>
+    </svg>
+    <div id="dust"></div>
+  </div>
+
+  <div class="glass"></div>
+
+  <div class="hud">
+    <div class="tape"><div class="strip" id="tape"></div></div>
+    <svg class="reticle" viewBox="-60 -60 120 120" stroke-width="1.5">
+      <path d="M-40 0 H-14 M14 0 H40 M0 -40 V-14 M0 14 V40"/>
+      <path d="M-30 -30 A42 42 0 0 1 30 -30 M30 30 A42 42 0 0 1 -30 30" opacity=".6"/>
+      <circle r="2" fill="currentColor" stroke="none" style="fill:var(--hud)"/>
+    </svg>
+    <div class="ladder"><div style="top:-90px"><span>10</span></div><div style="top:80px"><span>-10</span></div></div>
+    <div class="readout ro-left">ROUND<b>00 / 30</b>PRE-COMBAT<br>INITIATIVE — PENDING</div>
+    <div class="readout ro-right">RANGE<b>60 m · LONG</b>MODE — AUTONOMOUS<br>PILOT — BRAIN BRN-01</div>
+    <div class="vbar" style="left:9%"><i style="height:100%"></i><small>HP</small></div>
+    <div class="vbar" style="right:9%"><i style="height:100%"></i><small>EN</small></div>
+
+    <div class="target">
+      <i></i><i></i><i></i><i></i>
+      <div class="lbl">
+        <b>HOSTILE · CHASSIS ??</b>
+        DIST 60 m · BRAIN UNKNOWN<br>
+        <span class="unk">MELEE_WEAPON <span>???</span></span><br>
+        <span class="unk">RANGED_WEAPON <span>???</span></span><br>
+        <span class="unk">ARMOR_CLASS <span>???</span></span><br>
+        <span class="unk">MOBILITY <span>???</span></span><br>
+        ▸ SCAN REQUIRED
+      </div>
+    </div>
+    <div class="countdown" id="count">3</div>
+  </div>
+
+  <svg class="canopy" viewBox="0 0 1600 900" preserveAspectRatio="none">
+    <path fill="url(#metal)" fill-rule="evenodd" d="M0 0 H1600 V900 H0 Z M170 34 L1430 34 L1540 470 L1520 520 L80 520 L60 470 Z"/>
+    <path d="M170 34 L1430 34 L1540 470 L1520 520 L80 520 L60 470 Z" fill="none" stroke="#2c343b" stroke-width="6"/>
+    <path d="M170 34 L1430 34 L1540 470 L1520 520 L80 520 L60 470 Z" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1" transform="translate(0 4)"/>
+    <path d="M760 34 H840 L826 60 H774 Z" fill="#12161a"/>
+    <path d="M170 34 L60 470" stroke="#0b0e11" stroke-width="18"/>
+    <path d="M1430 34 L1540 470" stroke="#0b0e11" stroke-width="18"/>
+    <g fill="#39424a">
+      <rect x="220" y="44" width="4" height="4"/><rect x="420" y="44" width="4" height="4"/><rect x="620" y="44" width="4" height="4"/><rect x="980" y="44" width="4" height="4"/><rect x="1180" y="44" width="4" height="4"/><rect x="1380" y="44" width="4" height="4"/>
+    </g>
+    <rect x="1476" y="60" width="70" height="14" rx="2" fill="#2b0f0c"/><rect x="1480" y="63" width="14" height="8" fill="#ff4a3d" id="lampA"/>
+    <text x="1500" y="71" fill="#5d6870" font-family="IBM Plex Mono" font-size="8" letter-spacing="1">MASTER</text>
+  </svg>
+
+  <div class="alert" id="alert"></div>
+
+  <div class="dash">
+    <div class="deck">
+      <div class="consoles">
+        <div class="mfd l">
+          <div class="btns a"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="btns b"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="screen">
+            <h4><span>NEURAL CORE</span><span>BRN-01</span></h4>
+            <div class="big">BERSERKER</div>
+            <div class="ln"><span class="led"></span><span class="k">CORE</span><span>Close distance at any cost…</span></div>
+            <div class="ln"><span class="led"></span><span class="k">OPENING</span><span>R1: CHARGE immediately</span></div>
+            <div class="ln"><span class="led blink"></span><span class="k">TRIG 1</span><span>OWN EN ≥ 20 → CHARGE</span></div>
+            <div class="ln"><span class="led"></span><span class="k">TRIG 2</span><span>DIST ≠ CLOSE → ADVANCE</span></div>
+            <div class="ln"><span class="led"></span><span class="k">TRIG 3</span><span>ENEMY RETREAT → CHARGE</span></div>
+            <div class="ln"><span class="led off"></span><span class="k">EMERG</span><span>HP &lt; 25% · STANDBY</span></div>
+            <div class="ln" id="term" style="margin-top:4px">&gt; </div>
+          </div>
+        </div>
+        <div class="mfd c">
+          <div class="btns a"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="btns b"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="screen">
+            <h4><span>CHASSIS · CDP-01 BRAWLER</span><span>85 T</span></h4>
+            <div style="width:47%">
+              HULL 220 / 220<div class="meter"><i style="width:100%"></i></div>
+              ENERGY 100 / 100<div class="meter"><i style="width:100%"></i></div>
+              ARMOR HEAVY −12%<div class="meter"><i style="width:100%"></i></div>
+              <div class="ln"><span class="k">MELEE</span><span>HAMMER 28</span></div>
+              <div class="ln"><span class="k">RANGED</span><span>AUTOCAN 16</span></div>
+              <div class="ln"><span class="k">MOVE</span><span>8 / 20 m</span></div>
+            </div>
+            <canvas id="wire"></canvas>
+          </div>
+        </div>
+        <div class="mfd r">
+          <div class="btns a"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="btns b"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="screen red">
+            <h4><span>ENEMY INTEL</span><span>0 / 4 KNOWN</span></h4>
+            <div class="big">UNIDENTIFIED</div>
+            <div class="ln"><span class="led off"></span><span class="k">MELEE</span><span>??? </span></div>
+            <div class="ln"><span class="led off"></span><span class="k">RANGED</span><span>???</span></div>
+            <div class="ln"><span class="led off"></span><span class="k">ARMOR</span><span>???</span></div>
+            <div class="ln"><span class="led off"></span><span class="k">MOBILITY</span><span>???</span></div>
+            <div class="ln" style="margin-top:6px">SCAN COST 10 EN</div>
+            <div class="ln">1 SCAN = 1 ATTRIBUTE</div>
+            <div class="radar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="toggles" id="toggles">
+          <div class="tog on"><div class="lamp"></div><div class="base"></div>REACTOR</div>
+          <div class="tog on"><div class="lamp"></div><div class="base"></div>NEURAL</div>
+          <div class="tog on"><div class="lamp"></div><div class="base"></div>SENSORS</div>
+          <div class="tog"><div class="lamp"></div><div class="base"></div>LOG</div>
+        </div>
+        <div class="engage" id="engage">
+          <div class="btn">ENGAGE</div>
+          <div class="cover"></div>
+          <small id="engage-hint">CLICK TO LIFT GUARD</small>
+        </div>
+        <div class="lamps"><i class="ok"></i>LINK <i class="ok"></i>ARMS <i id="lampB"></i>COMBAT</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mock">MOCKUP · <a href="a-hangar-3d.html">A HANGAR</a><a href="b-neural-select.html">B NEURAL</a><a class="cur" href="c-cockpit-briefing.html">C COCKPIT</a></div>
+<div class="keyhint">SPACE = GUARD / ENGAGE</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+/* heading tape */
+$("tape").innerHTML = Array.from({ length: 24 }, (_, i) => `<span>${String((i * 15 + 300) % 360).padStart(3, "0")}</span>`).join("");
+
+/* dust */
+for (let i = 0; i < 40; i++) {
+  const d = document.createElement("div"); d.className = "dust";
+  d.style.left = 40 + Math.random() * 80 + "%"; d.style.top = 20 + Math.random() * 40 + "%";
+  d.style.animationDuration = 8 + Math.random() * 14 + "s"; d.style.animationDelay = -Math.random() * 20 + "s";
+  d.style.opacity = Math.random();
+  $("dust").appendChild(d);
+}
+
+/* terminal line */
+const lines = ["AWAITING ROUND 1…", "LLM LINK OK · 2 ACTIONS/ROUND", "ENEMY BRAIN: OPAQUE", "OPENING READ PRIMED"];
+let li = 0, ci = 0;
+setInterval(() => {
+  const l = lines[li];
+  ci++;
+  $("term").textContent = "> " + l.slice(0, ci) + (ci % 2 ? "▮" : " ");
+  if (ci > l.length + 18) { ci = 0; li = (li + 1) % lines.length; }
+}, 70);
+
+/* toggles */
+[...$("toggles").children].forEach((t) => (t.onclick = () => t.classList.toggle("on")));
+
+/* wireframe mech — tiny 3D projector for the chassis MFD */
+const BOXES = [ // cx, cy, cz, w, h, d  (Brawler-ish)
+  [-.45, .12, .1, .5, .25, .9], [.45, .12, .1, .5, .25, .9],
+  [-.45, .7, 0, .38, .9, .45], [.45, .7, 0, .38, .9, .45],
+  [-.42, 1.55, 0, .34, .8, .4], [.42, 1.55, 0, .34, .8, .4],
+  [0, 2.05, 0, 1.2, .35, .6],
+  [0, 2.9, 0, 1.9, 1.35, 1.25],
+  [0, 2.9, -.9, 1.4, 1.0, .55],
+  [0, 3.75, .3, .5, .35, .5],
+  [-1.3, 3.45, 0, .8, .45, .9], [1.3, 3.45, 0, .8, .45, .9],
+  [-1.3, 2.7, 0, .36, .8, .36], [1.3, 2.7, 0, .36, .8, .36],
+  [-1.3, 1.9, .25, .45, .8, .5], [1.3, 1.9, .25, .45, .8, .5],
+  [1.3, 1.1, .45, .55, .5, .9],
+  [-1.3, 1.9, 1.0, .12, .12, 1.0],
+];
+const EDGES = [[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]];
+const cv = $("wire"), ctx = cv.getContext("2d");
+function sizeCanvas() { const r = cv.getBoundingClientRect(); cv.width = r.width * devicePixelRatio; cv.height = r.height * devicePixelRatio; }
+sizeCanvas(); addEventListener("resize", sizeCanvas);
+function drawWire(t) {
+  const W = cv.width, H = cv.height, a = t / 2200, tilt = -.35;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(255,184,74,.9)"; ctx.lineWidth = 1.2 * devicePixelRatio;
+  ctx.shadowColor = "rgba(255,184,74,.9)"; ctx.shadowBlur = 6 * devicePixelRatio;
+  const s = Math.min(W, H) / 5.2, ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(tilt), st = Math.sin(tilt);
+  const proj = ([x, y, z]) => {
+    const x1 = x * ca + z * sa, z1 = -x * sa + z * ca;
+    const y1 = (y - 2) * ct - z1 * st, z2 = (y - 2) * st + z1 * ct;
+    const f = 7 / (7 - z2);
+    return [W / 2 + x1 * s * f, H * .55 - y1 * s * f];
+  };
+  ctx.beginPath();
+  for (const [cx, cy, cz, w, h, d] of BOXES) {
+    const v = [];
+    for (const dz of [-d / 2, d / 2]) for (const dy of [-h / 2, h / 2]) for (const dx of [-w / 2, w / 2]) v.push(proj([cx + dx, cy + dy, cz + dz]));
+    // vertex index = z * 4 + y * 2 + x
+    for (const [i, j] of EDGES) { ctx.moveTo(...v[i]); ctx.lineTo(...v[j]); }
+  }
+  ctx.stroke();
+  // ground ring
+  ctx.beginPath(); ctx.globalAlpha = .4;
+  for (let i = 0; i <= 48; i++) { const q = (i / 48) * Math.PI * 2; const p = proj([Math.cos(q) * 1.8, 0, Math.sin(q) * 1.8]); i ? ctx.lineTo(...p) : ctx.moveTo(...p); }
+  ctx.stroke(); ctx.globalAlpha = 1;
+  requestAnimationFrame(drawWire);
+}
+requestAnimationFrame(drawWire);
+
+/* guarded ENGAGE + countdown */
+const eng = $("engage");
+let stage = 0;
+function engage() {
+  if (stage === 0) { eng.classList.add("open"); $("engage-hint").textContent = "PRESS TO ENGAGE"; stage = 1; return; }
+  if (stage !== 1) return;
+  stage = 2;
+  eng.classList.add("pressed"); setTimeout(() => eng.classList.remove("pressed"), 150);
+  $("alert").classList.add("on"); $("lampB").classList.add("on");
+  const steps = ["3", "2", "1", "FIGHT"];
+  steps.forEach((n, i) => setTimeout(() => {
+    const c = $("count"); c.textContent = n; c.style.fontSize = n.length > 1 ? "140px" : "";
+    c.classList.remove("go"); void c.offsetWidth; c.classList.add("go");
+    if (n === "FIGHT") { const k = $("cockpit"); k.classList.remove("shake"); void k.offsetWidth; k.classList.add("shake"); }
+  }, i * 900));
+  setTimeout(() => { $("alert").classList.remove("on"); $("lampB").classList.remove("on"); eng.classList.remove("open"); $("engage-hint").textContent = "CLICK TO LIFT GUARD"; stage = 0; }, 5200);
+}
+eng.onclick = engage;
+addEventListener("keydown", (e) => { if (e.code === "Space" || e.key === "Enter") { e.preventDefault(); engage(); } });
+
+/* subtle parallax: head movement inside the cockpit */
+addEventListener("pointermove", (e) => {
+  const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+  document.querySelector(".world").style.translate = `${-x * 24}px ${-y * 12}px`;
+  document.querySelector(".hud").style.translate = `${-x * 10}px ${-y * 6}px`;
+});
+</script>
+</body>
+</html>
