@@ -5,7 +5,8 @@
   "type": "module",
   "exports": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "simulate": "bun run src/cli.ts"
   },
   "dependencies": {
     "@steelmind/game-types": "workspace:*"

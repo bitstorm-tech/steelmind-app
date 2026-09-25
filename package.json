@@ -7,6 +7,7 @@
     "dev": "bun run --filter './apps/*' dev",
     "dev:server": "bun run --cwd apps/server dev",
     "dev:web": "bun run --cwd apps/web dev",
+    "simulate": "bun run --cwd packages/game-engine simulate",
     "test": "bun run test:packages && bun run test:web",
     "test:packages": "bun test packages apps/server",
     "test:web": "bun run --cwd apps/web test",
