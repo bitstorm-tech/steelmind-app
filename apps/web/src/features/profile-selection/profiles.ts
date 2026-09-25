@@ -43,13 +43,13 @@ export interface CombatProfileSpec {
   accent: string;
 }
 
-const MELEE_NAMES: Record<MeleeWeaponId, string> = {
+export const MELEE_NAMES: Record<MeleeWeaponId, string> = {
   POWER_HAMMER: "Power Hammer",
   ENERGY_BLADE: "Energy Blade",
   IMPACT_FIST: "Impact Fist",
 };
 
-const RANGED_NAMES: Record<RangedWeaponId, string> = {
+export const RANGED_NAMES: Record<RangedWeaponId, string> = {
   AUTOCANNON: "Autocannon",
   RAILGUN: "Railgun",
   PULSE_LASER: "Pulse Laser",
