@@ -121,9 +121,9 @@ Combat rules are identical in every mode.
 - Vue 3
 - TypeScript
 - Vite
-- PlayCanvas
+- Three.js
 
-PlayCanvas is visualization only.
+Three.js is visualization only.
 
 It must never determine:
 
@@ -191,7 +191,7 @@ No dependency on:
 
 - Vue,
 - Hono,
-- PlayCanvas,
+- Three.js,
 - database code,
 - provider SDKs.
 
@@ -222,7 +222,7 @@ Must contain no:
 - HTTP,
 - database access,
 - LLM calls,
-- PlayCanvas code,
+- Three.js code,
 - network requests.
 
 ---
@@ -2195,7 +2195,7 @@ No:
 - database,
 - LLM,
 - Vue,
-- PlayCanvas.
+- Three.js.
 
 Provide a CLI simulation.
 
@@ -2284,7 +2284,7 @@ Implement:
 - Edit Brain,
 - Rematch.
 
-Do not implement PlayCanvas yet.
+Do not implement the 3D match scene yet.
 
 Acceptance criterion:
 
@@ -2294,7 +2294,7 @@ The complete core loop is playable without 3D.
 
 ---
 
-## Milestone 6 — PlayCanvas
+## Milestone 6 — 3D Match Scene (Three.js)
 
 Implement:
 
@@ -2313,7 +2313,7 @@ Implement:
 - cameras,
 - combat HUD.
 
-PlayCanvas consumes CombatEvents.
+The Three.js scene consumes CombatEvents.
 
 Acceptance criterion:
 
@@ -2357,7 +2357,7 @@ describe
 
 ↓
 
-PLAYCANVAS
+THREE.JS
 visualizes
 ```
 
@@ -2365,7 +2365,7 @@ The LLM never determines damage.
 
 The frontend never determines game state.
 
-PlayCanvas never determines collisions.
+Three.js never determines collisions.
 
 The Game Engine never calls an LLM.
 

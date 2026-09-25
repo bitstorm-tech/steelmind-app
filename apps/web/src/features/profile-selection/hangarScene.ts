@@ -5,7 +5,18 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { buildMech, disposeMech } from "./mechModel";
-import type { AnchorKey, MechRig } from "./mechModel";
+import type { MechRig } from "./mechModel";
+import {
+  CAM_DIST,
+  cameraPosition,
+  createCalloutOverlay,
+  createOrbitInput,
+  stepOrbit,
+  stripeCanvas,
+  textCanvas,
+  timerBag,
+} from "./hangarShared";
+import type { CalloutElements, HangarScene } from "./hangarShared";
 import type { CombatProfileSpec } from "./profiles";
 
 // WebGL hangar bay for the Combat Profile screen: turntable, scan-line
@@ -13,38 +24,8 @@ import type { CombatProfileSpec } from "./profiles";
 // weapon callouts projected onto an SVG overlay. Pure presentation — the
 // screen component owns selection state and just tells the scene what to show.
 
-export interface CalloutElements {
-  svg: SVGSVGElement;
-  tags: Record<AnchorKey, HTMLElement>;
-}
-
-export interface HangarScene {
-  showProfile(profile: CombatProfileSpec): void;
-  punchIn(): void;
-  dispose(): void;
-}
-
-const CAM_DIST = 17;
-const CALLOUT_ROWS: Record<AnchorKey, number> = { sensor: -110, ranged: -10, melee: 90 };
-const SVG_NS = "http://www.w3.org/2000/svg";
-
 function stripeTexture(repeat: number): THREE.CanvasTexture {
-  const c = document.createElement("canvas");
-  c.width = 128;
-  c.height = 32;
-  const x = c.getContext("2d")!;
-  x.fillStyle = "#15181b";
-  x.fillRect(0, 0, 128, 32);
-  x.fillStyle = "#c8901a";
-  for (let i = -32; i < 160; i += 32) {
-    x.beginPath();
-    x.moveTo(i, 32);
-    x.lineTo(i + 16, 32);
-    x.lineTo(i + 32, 0);
-    x.lineTo(i + 16, 0);
-    x.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(stripeCanvas());
   t.wrapS = THREE.RepeatWrapping;
   t.repeat.set(repeat, 1);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -52,16 +33,7 @@ function stripeTexture(repeat: number): THREE.CanvasTexture {
 }
 
 function textTexture(text: string, size: number): THREE.CanvasTexture {
-  const c = document.createElement("canvas");
-  c.width = 1024;
-  c.height = 512;
-  const x = c.getContext("2d")!;
-  x.fillStyle = "#fff";
-  x.textAlign = "center";
-  x.textBaseline = "middle";
-  x.font = `800 ${size}px "Saira Condensed", "Arial Narrow", sans-serif`;
-  x.fillText(text, c.width / 2, c.height / 2);
-  const t = new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(textCanvas(text, size));
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -91,7 +63,6 @@ export function createHangarScene(
   const camera = new THREE.PerspectiveCamera(32, window.innerWidth / window.innerHeight, 0.1, 120);
   const lookAt = new THREE.Vector3(0, 2.4, 0);
   let camDist = CAM_DIST;
-  let camDistTarget = CAM_DIST;
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -305,14 +276,7 @@ export function createHangarScene(
   let pending: CombatProfileSpec | null = null;
   let clipH = 0;
   let clipTarget = 0;
-  const timers = new Set<number>();
-  const later = (fn: () => void, ms: number) => {
-    const id = window.setTimeout(() => {
-      timers.delete(id);
-      fn();
-    }, ms);
-    timers.add(id);
-  };
+  const timers = timerBag();
 
   function swapMech(): void {
     if (mech) {
@@ -327,81 +291,34 @@ export function createHangarScene(
   }
 
   // ---- orbit (drag) + zoom + parallax ----
-  let yaw = -0.35;
-  let yawVel = 0;
-  let dragging = false;
-  let lastX = 0;
-  let idle = 0;
-  let mx = 0;
-  let my = 0;
-  const onPointerDown = (e: PointerEvent) => {
-    dragging = true;
-    lastX = e.clientX;
-    idle = 0;
-  };
-  const onPointerUp = () => {
-    dragging = false;
-  };
-  const onPointerMove = (e: PointerEvent) => {
-    mx = e.clientX / window.innerWidth - 0.5;
-    my = e.clientY / window.innerHeight - 0.5;
-    if (!dragging) return;
-    yawVel = (e.clientX - lastX) * 0.006;
-    lastX = e.clientX;
-    idle = 0;
-  };
-  const onWheel = (e: WheelEvent) => {
-    camDistTarget = THREE.MathUtils.clamp(camDistTarget + e.deltaY * 0.01, 10, 22);
-  };
+  const orbit = createOrbitInput(canvas);
   const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     composer.setSize(window.innerWidth, window.innerHeight);
   };
-  canvas.addEventListener("pointerdown", onPointerDown);
-  canvas.addEventListener("wheel", onWheel, { passive: true });
-  window.addEventListener("pointerup", onPointerUp);
-  window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("resize", onResize);
 
   // ---- callouts ----
-  const calls = (Object.keys(CALLOUT_ROWS) as AnchorKey[]).map((k) => {
-    const line = document.createElementNS(SVG_NS, "polyline");
-    const dot = document.createElementNS(SVG_NS, "circle");
-    dot.setAttribute("r", "3");
-    callouts.svg.append(line, dot);
-    return { k, line, dot, tag: callouts.tags[k] };
-  });
+  const overlay = createCalloutOverlay(callouts);
   const projected = new THREE.Vector3();
   const world = new THREE.Vector3();
   function updateCallouts(): void {
     if (!mech) return;
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    const cx = W / 2;
-    // keep tags clear of the ident block (left) and stat panel (right)
-    const minX = 480;
-    const maxX = W - 410;
-    for (const c of calls) {
-      mech.anchors[c.k].getWorldPosition(world);
-      projected.copy(world).project(camera);
-      const x = ((projected.x + 1) / 2) * W;
-      const y = ((1 - projected.y) / 2) * H;
-      const visible = !pending && clipH > world.y + 0.2 && W > 1100;
-      const side = x < cx ? -1 : 1;
-      const w = c.tag.offsetWidth;
-      const tx = side < 0 ? Math.max(minX + w, x - 150) : Math.min(maxX - w, x + 150);
-      const ty = y + CALLOUT_ROWS[c.k] * 0.4;
-      c.line.setAttribute("points", `${x},${y} ${tx - side * 30},${ty} ${tx},${ty}`);
-      c.dot.setAttribute("cx", String(x));
-      c.dot.setAttribute("cy", String(y));
-      c.tag.style.transform = `translate(${side < 0 ? tx - w : tx}px, ${ty - 22}px)`;
-      const o = visible ? 1 : 0;
-      c.tag.style.opacity = String(o);
-      c.line.style.opacity = String(o * 0.8);
-      c.dot.style.opacity = String(o);
-    }
+    const rig = mech;
+    overlay.update(
+      (k) => {
+        rig.anchors[k].getWorldPosition(world);
+        projected.copy(world).project(camera);
+        return {
+          x: ((projected.x + 1) / 2) * window.innerWidth,
+          y: ((1 - projected.y) / 2) * window.innerHeight,
+          worldY: world.y,
+        };
+      },
+      (worldY) => !pending && clipH > worldY + 0.2,
+    );
   }
 
   // ---- loop ----
@@ -420,14 +337,8 @@ export function createHangarScene(
     scanRing.position.y = clipH;
     scanRing.scale.setScalar(1 + Math.sin(t * 20) * 0.02);
 
-    // turntable drifts back to a slow sway when idle
-    if (!dragging) {
-      yawVel *= 0.94;
-      idle += dt;
-      if (idle > 2.5) yaw += (Math.sin(t * 0.22) * 0.7 - yaw) * dt * 0.6;
-    }
-    yaw += yawVel;
-    turntable.rotation.y = yaw;
+    stepOrbit(orbit, dt, t);
+    turntable.rotation.y = orbit.yaw;
 
     // idle life
     if (mech) {
@@ -438,12 +349,8 @@ export function createHangarScene(
       mech.lit.emissiveIntensity = 3 + Math.sin(t * 3) * 0.5;
     }
 
-    camDist += (camDistTarget - camDist) * Math.min(1, dt * 3);
-    camera.position.set(
-      Math.sin(mx * 0.25) * camDist + mx * 1.2,
-      3.3 - my * 1.2,
-      Math.cos(mx * 0.25) * camDist,
-    );
+    camDist += (orbit.camDistTarget - camDist) * Math.min(1, dt * 3);
+    camera.position.set(...cameraPosition(orbit, camDist));
     camera.lookAt(lookAt);
 
     const pos = dustGeo.attributes.position as THREE.BufferAttribute;
@@ -466,25 +373,19 @@ export function createHangarScene(
       pending = profile;
       clipTarget = 0;
       rim.color.set(profile.accent);
-      camDistTarget = CAM_DIST - 1;
-      later(() => (camDistTarget = CAM_DIST), 450);
+      orbit.camDistTarget = CAM_DIST - 1;
+      timers.later(() => (orbit.camDistTarget = CAM_DIST), 450);
     },
     punchIn() {
-      camDistTarget = 11;
-      later(() => (camDistTarget = CAM_DIST), 2600);
+      orbit.camDistTarget = 11;
+      timers.later(() => (orbit.camDistTarget = CAM_DIST), 2600);
     },
     dispose() {
       cancelAnimationFrame(frame);
-      for (const id of timers) window.clearTimeout(id);
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("wheel", onWheel);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointermove", onPointerMove);
+      timers.clear();
+      orbit.dispose();
       window.removeEventListener("resize", onResize);
-      for (const c of calls) {
-        c.line.remove();
-        c.dot.remove();
-      }
+      overlay.dispose();
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh || o instanceof THREE.Points) {
           o.geometry.dispose();
