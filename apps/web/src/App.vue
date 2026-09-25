@@ -47,7 +47,9 @@ function reselectProfile(): void {
   />
   <ProfileSelectionScreen
     v-else-if="stage === 'profile'"
+    :brain-id="brainId"
     @confirm="onProfileConfirmed"
+    @back="reselectBrain"
   />
   <LoadoutBriefing
     v-else-if="brainId !== null && profileId !== null"

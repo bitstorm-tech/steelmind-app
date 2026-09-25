@@ -1,76 +1,109 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import App from "./App.vue";
 
 // Flow per SPEC §52: Choose Brain → Choose Combat Profile → (Match follows).
 
-async function commitFirstCard(wrapper: ReturnType<typeof mount>): Promise<void> {
-  await wrapper.findAll(".card")[0]!.trigger("click");
-  await wrapper.get(".commit").trigger("click");
+type Wrapper = ReturnType<typeof mount>;
+
+function key(type: "keydown" | "keyup", k: string): void {
+  window.dispatchEvent(new KeyboardEvent(type, { key: k }));
+}
+
+async function linkBrain(wrapper: Wrapper, index = 0): Promise<void> {
+  const cards = wrapper.findAll(".card");
+  if (index !== 0) await cards[index]!.trigger("click");
+  await wrapper.get(".go").trigger("click");
+  await vi.advanceTimersByTimeAsync(5000);
+}
+
+async function deployChassis(): Promise<void> {
+  key("keydown", "Enter");
+  await vi.advanceTimersByTimeAsync(1200);
+  key("keyup", "Enter");
+  await vi.advanceTimersByTimeAsync(2000);
 }
 
 describe("App", () => {
-  test("renders the title", () => {
-    const wrapper = mount(App);
-    expect(wrapper.text()).toContain("Steelmind");
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   test("starts at brain selection", () => {
     const wrapper = mount(App);
 
-    expect(wrapper.text()).toContain("Select Your Brain");
+    expect(wrapper.text()).toContain("Steelmind");
+    expect(wrapper.text()).toContain("Select Brain");
     expect(wrapper.findAll(".card")).toHaveLength(5);
+    wrapper.unmount();
   });
 
-  test("flows brain commit → profile selection", async () => {
+  test("flows brain link → chassis bay", async () => {
     const wrapper = mount(App);
 
-    await commitFirstCard(wrapper);
+    await linkBrain(wrapper);
 
-    expect(wrapper.text()).toContain("Select Your Combat Profile");
-    expect(wrapper.findAll(".card")).toHaveLength(3);
+    expect(wrapper.text()).toContain("CHASSIS BAY");
+    expect(wrapper.findAll(".tile")).toHaveLength(3);
+    expect(wrapper.get(".steps").text()).toContain("BERSERKER");
+    wrapper.unmount();
   });
 
-  test("flows profile commit → loadout summary", async () => {
+  test("escape in the chassis bay returns to brain selection", async () => {
     const wrapper = mount(App);
 
-    await commitFirstCard(wrapper); // BERSERKER
-    await commitFirstCard(wrapper); // BRAWLER
+    await linkBrain(wrapper);
+    key("keydown", "Escape");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain("Select Brain");
+    wrapper.unmount();
+  });
+
+  test("flows chassis deploy → loadout summary", async () => {
+    const wrapper = mount(App);
+
+    await linkBrain(wrapper); // BERSERKER
+    await deployChassis(); // BRAWLER
 
     const text = wrapper.text();
     expect(text).toContain("Loadout Ready");
     expect(text).toContain("Berserker");
     expect(text).toContain("Brawler");
     expect(text).toContain("MATCH SCREEN FOLLOWS");
+    wrapper.unmount();
   });
 
-  test("reselect profile returns to the profile screen", async () => {
+  test("reselect profile returns to the chassis bay", async () => {
     const wrapper = mount(App);
 
-    await commitFirstCard(wrapper);
-    await commitFirstCard(wrapper);
+    await linkBrain(wrapper);
+    await deployChassis();
     await wrapper.findAll("button")[1]!.trigger("click"); // RESELECT PROFILE
 
-    expect(wrapper.text()).toContain("Select Your Combat Profile");
+    expect(wrapper.text()).toContain("CHASSIS BAY");
+    wrapper.unmount();
   });
 
   test("reselect brain returns to the brain screen and accepts a new pick", async () => {
     const wrapper = mount(App);
 
-    await commitFirstCard(wrapper); // BERSERKER
-    await commitFirstCard(wrapper); // BRAWLER
+    await linkBrain(wrapper); // BERSERKER
+    await deployChassis(); // BRAWLER
     await wrapper.findAll("button")[0]!.trigger("click"); // RESELECT BRAIN
 
-    expect(wrapper.text()).toContain("Select Your Brain");
-    await wrapper.findAll(".card")[1]!.trigger("click"); // SENTINEL
-    await wrapper.get(".commit").trigger("click");
-
-    expect(wrapper.text()).toContain("Select Your Combat Profile");
-    await commitFirstCard(wrapper); // BRAWLER again
+    expect(wrapper.text()).toContain("Select Brain");
+    await linkBrain(wrapper, 1); // SENTINEL
+    await deployChassis(); // BRAWLER again
 
     const text = wrapper.text();
     expect(text).toContain("Loadout Ready");
     expect(text).toContain("Sentinel");
     expect(text).toContain("Brawler");
+    wrapper.unmount();
   });
 });
