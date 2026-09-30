@@ -11,7 +11,7 @@ import type { BrainId } from "./brains";
 // brain in focus. Linking the focused brain commits it; App.vue owns the flow
 // order. Starter Brains are factory firmware — copied when customized.
 
-const emit = defineEmits<{ confirm: [id: BrainId] }>();
+const emit = defineEmits<{ confirm: [id: BrainId]; simulate: [] }>();
 
 const N = STARTER_BRAINS.length;
 const STEP_DEG = 24;
@@ -172,6 +172,7 @@ function onKeydown(e: KeyboardEvent): void {
   else if (k === "w" || k === "arrowup") setLayer(layer.value - 1);
   else if (k === "s" || k === "arrowdown") setLayer(layer.value + 1);
   else if (k === "enter") {
+    if (e.target instanceof Element && e.target.closest(".sim")) return;
     e.preventDefault();
     link();
   } else return;
@@ -224,7 +225,10 @@ onBeforeUnmount(() => {
         <small>STEP 1 / 3 · NEURAL LOADER</small>
         <h1>Select Brain</h1>
       </div>
-      <div class="steps" aria-hidden="true">BRAIN <i class="on" /><i /><i /></div>
+      <div class="top-right">
+        <button type="button" class="sim" @click="emit('simulate')">SIM BAY ▸</button>
+        <div class="steps" aria-hidden="true">BRAIN <i class="on" /><i /><i /></div>
+      </div>
     </header>
 
     <aside class="panel left" aria-label="Behaviour matrix">
@@ -491,6 +495,28 @@ kbd {
   line-height: 1.2;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.top-right {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+
+.sim {
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+}
+
+.sim:hover {
+  color: var(--amber);
+  border-color: var(--amber);
 }
 
 .steps {

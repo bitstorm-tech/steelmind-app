@@ -1,4 +1,5 @@
 import {
+  ACTION_ENERGY_COST,
   COMBAT_PROFILES,
   MECH_SIDES,
   MELEE_WEAPONS,
@@ -66,7 +67,91 @@ export const kiterPlanner: Planner = (view) => {
   return ["RANGED_ATTACK", "RANGED_ATTACK"];
 };
 
-export const SCRIPTED_PLANNERS = { brawler: brawlerPlanner, kiter: kiterPlanner } as const;
+function lastEnemyAction(view: MechView) {
+  return view.enemyActions.at(-1)?.action;
+}
+
+// Holds ground behind DEFEND, shoots from range and answers contact with melee.
+export const sentinelPlanner: Planner = (view) => {
+  const profile = COMBAT_PROFILES[view.own.profileId];
+  const melee = MELEE_WEAPONS[profile.meleeWeapon];
+  const ranged = RANGED_WEAPONS[profile.rangedWeapon];
+  const close = view.distanceCategory === "CLOSE";
+  if (view.round <= 2 && view.unknownEnemyAttributes.length > 0) {
+    return ["SCAN", "DEFEND"];
+  }
+  if (view.own.hp * 100 < view.own.maxHp * 30) {
+    return close ? ["DEFEND", "MELEE_ATTACK"] : ["DEFEND", "RANGED_ATTACK"];
+  }
+  if (close) {
+    return view.own.energy >= melee.energy + ACTION_ENERGY_COST.DEFEND ? ["DEFEND", "MELEE_ATTACK"] : ["DEFEND", "DEFEND"];
+  }
+  if (lastEnemyAction(view) === "CHARGE" || view.own.energy < 50) {
+    return ["DEFEND", "RANGED_ATTACK"];
+  }
+  return view.own.energy >= 50 + ranged.energy * 2 ? ["RANGED_ATTACK", "RANGED_ATTACK"] : ["RANGED_ATTACK", "DEFEND"];
+};
+
+// Holds MEDIUM range and commits to melee once the enemy runs low on energy.
+export const opportunistPlanner: Planner = (view) => {
+  const profile = COMBAT_PROFILES[view.own.profileId];
+  const melee = MELEE_WEAPONS[profile.meleeWeapon];
+  const ranged = RANGED_WEAPONS[profile.rangedWeapon];
+  const enemyDrained = view.enemy.energy < 25;
+  if (view.round === 1 && view.unknownEnemyAttributes.length > 0) {
+    return ["SCAN", "ADVANCE"];
+  }
+  if (view.own.hp * 100 < view.own.maxHp * 35) {
+    return view.distanceCategory === "CLOSE" ? ["RETREAT", "DODGE"] : ["RETREAT", "RANGED_ATTACK"];
+  }
+  switch (view.distanceCategory) {
+    case "CLOSE":
+      if (lastEnemyAction(view) === "CHARGE") return ["DODGE", "MELEE_ATTACK"];
+      if (enemyDrained || view.initiative === view.side) {
+        return view.own.energy >= melee.energy * 2 ? ["MELEE_ATTACK", "MELEE_ATTACK"] : ["MELEE_ATTACK", "DODGE"];
+      }
+      return ["MELEE_ATTACK", "RETREAT"];
+    case "MEDIUM":
+      if (enemyDrained) return ["ADVANCE", "MELEE_ATTACK"];
+      return view.own.energy >= ranged.energy * 2 + 20 ? ["RANGED_ATTACK", "RANGED_ATTACK"] : ["RANGED_ATTACK", "DEFEND"];
+    case "LONG":
+      return ["ADVANCE", "RANGED_ATTACK"];
+  }
+};
+
+// Breaks patterns: alternates feints by round parity and bursts in with CHARGE.
+export const tricksterPlanner: Planner = (view) => {
+  const profile = COMBAT_PROFILES[view.own.profileId];
+  const melee = MELEE_WEAPONS[profile.meleeWeapon];
+  const odd = view.round % 2 === 1;
+  const canBurst =
+    view.own.energy >= ACTION_ENERGY_COST.CHARGE + melee.energy &&
+    view.distance <= MOBILITY_METERS[profile.mobility].charge;
+  if (view.round === 1 && view.unknownEnemyAttributes.length > 0) {
+    return ["SCAN", "DODGE"];
+  }
+  if (view.own.hp * 100 < view.own.maxHp * 25) {
+    return ["RETREAT", "DODGE"];
+  }
+  if (view.distanceCategory === "CLOSE") {
+    return odd ? ["MELEE_ATTACK", "DODGE"] : ["DEFEND", "MELEE_ATTACK"];
+  }
+  if (canBurst && (lastEnemyAction(view) === "DEFEND" || view.round % 3 === 0)) {
+    return ["CHARGE", "MELEE_ATTACK"];
+  }
+  if (view.distanceCategory === "MEDIUM") {
+    return odd ? ["ADVANCE", "RANGED_ATTACK"] : ["RETREAT", "RANGED_ATTACK"];
+  }
+  return view.enemy.energy < 50 ? ["RANGED_ATTACK", "RANGED_ATTACK"] : ["ADVANCE", "RANGED_ATTACK"];
+};
+
+export const SCRIPTED_PLANNERS = {
+  brawler: brawlerPlanner,
+  kiter: kiterPlanner,
+  sentinel: sentinelPlanner,
+  opportunist: opportunistPlanner,
+  trickster: tricksterPlanner,
+} as const;
 export type ScriptedPlannerId = keyof typeof SCRIPTED_PLANNERS;
 
 export function describeResult(state: GameState): string {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { MAX_ROUNDS, PROFILE_IDS } from "@steelmind/game-types";
-import { brawlerPlanner, kiterPlanner, runMatch } from "./simulate";
+import { ActionPlanSchema, MAX_ROUNDS, PROFILE_IDS } from "@steelmind/game-types";
+import { brawlerPlanner, kiterPlanner, runMatch, SCRIPTED_PLANNERS, type Planner } from "./simulate";
 
 describe("runMatch", () => {
   // Milestone 1 acceptance: two scripted mechs complete a deterministic fight
@@ -29,5 +29,19 @@ describe("runMatch", () => {
       JSON.stringify(runMatch({ seed, profiles: { A: "BRAWLER", B: "SKIRMISHER" } }, { A: brawlerPlanner, B: kiterPlanner }).events.slice(1));
     const distinct = new Set(Array.from({ length: 10 }, (_, seed) => run(seed)));
     expect(distinct.size).toBeGreaterThan(1);
+  });
+
+  test("every scripted planner pairing finishes with valid plans", () => {
+    const planners = Object.values(SCRIPTED_PLANNERS);
+    const checked = (planner: Planner): Planner => (view) => ActionPlanSchema.parse(planner(view));
+    for (const a of planners) {
+      for (const b of planners) {
+        for (let seed = 0; seed < 3; seed++) {
+          const { state } = runMatch({ seed, profiles: { A: "ASSAULT", B: "SKIRMISHER" } }, { A: checked(a), B: checked(b) });
+          expect(state.result).not.toBeNull();
+          expect(state.round).toBeLessThanOrEqual(MAX_ROUNDS);
+        }
+      }
+    }
   });
 });

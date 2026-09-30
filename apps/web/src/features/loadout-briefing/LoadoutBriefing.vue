@@ -17,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   reselectBrain: [];
   reselectProfile: [];
+  simulate: [];
 }>();
 
 const brain = computed(
@@ -85,7 +86,7 @@ const profile = computed(
     </section>
 
     <p class="note">
-      MATCH SCREEN FOLLOWS — AWAITING ENGINE DOCK
+      MATCH SCREEN FOLLOWS — TEST THIS LOADOUT IN THE SIM BAY
       <span class="cursor" aria-hidden="true">▮</span>
     </p>
 
@@ -100,6 +101,9 @@ const profile = computed(
         </button>
         <button type="button" class="ghost" @click="emit('reselectProfile')">
           RESELECT PROFILE
+        </button>
+        <button type="button" class="go" @click="emit('simulate')">
+          SIMULATE
         </button>
       </div>
     </footer>
@@ -385,5 +389,22 @@ const profile = computed(
 .ghost:hover {
   color: var(--ink);
   border-color: var(--ink-faint);
+}
+
+.go {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 10px 20px;
+  color: #14181c;
+  background: var(--amber);
+  border: 1px solid var(--amber);
+  cursor: pointer;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.go:hover {
+  background: #ffc34d;
 }
 </style>

@@ -106,4 +106,28 @@ describe("App", () => {
     expect(text).toContain("Brawler");
     wrapper.unmount();
   });
+
+  test("sim bay opens from brain selection and returns there", async () => {
+    const wrapper = mount(App);
+
+    await wrapper.get(".sim").trigger("click");
+    expect(wrapper.text()).toContain("Combat Simulator");
+
+    await wrapper.get(".dock .ghost").trigger("click"); // BACK
+    expect(wrapper.text()).toContain("Select Brain");
+    wrapper.unmount();
+  });
+
+  test("simulate from the loadout summary pre-fills mech A", async () => {
+    const wrapper = mount(App);
+
+    await linkBrain(wrapper, 1); // SENTINEL
+    await deployChassis(); // BRAWLER
+    await wrapper.findAll("button")[2]!.trigger("click"); // SIMULATE
+
+    expect(wrapper.get(".bay.side-A .bay-sum").text()).toBe("Sentinel · Brawler");
+    await wrapper.get(".dock .ghost").trigger("click"); // BACK
+    expect(wrapper.text()).toContain("Loadout Ready");
+    wrapper.unmount();
+  });
 });

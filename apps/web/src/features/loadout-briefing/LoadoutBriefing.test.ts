@@ -25,7 +25,7 @@ describe("LoadoutBriefing", () => {
     });
 
     const buttons = wrapper.findAll("button");
-    expect(buttons.map((b) => b.text())).toEqual(["RESELECT BRAIN", "RESELECT PROFILE"]);
+    expect(buttons.map((b) => b.text())).toEqual(["RESELECT BRAIN", "RESELECT PROFILE", "SIMULATE"]);
 
     await buttons[0]!.trigger("click");
     await buttons[1]!.trigger("click");
